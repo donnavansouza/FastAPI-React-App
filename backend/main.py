@@ -7,8 +7,21 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 import models
 from sqlalchemy.orm import Session
 from database import sessionLocal, engine
+import requests
 
-municipios_url = "https://servicodados.ibge.gov.br/api/v1/localidades/estados/23/municipios"
+url = "http://localhost:8000/"
+
+try:
+    response = requests.get(url)
+    response.raise_for_status()  # Check for HTTP request errors
+    data = response.json()  # Parse the JSON response
+    print("data exists")
+except requests.exceptions.HTTPError as err:
+    print(f"HTTP error occurred: {err}")
+except Exception as err:
+    print(f"Other error occurred: {err}")
+    
+
 
 app = FastAPI()
 
@@ -23,6 +36,7 @@ def get_db():
         
 db_dependency = Annotated[Session,Depends(get_db)]
 
+
 class Relatorio_model(BaseModel):
     titulo: str
     relatorio: str
@@ -30,6 +44,23 @@ class Relatorio_model(BaseModel):
     municipio: str
     ano: str
     
+def get_year_poverty(ano):
+    anos = [1991, 2000, 2010]
+    ano_escolhido = anos[0]
+    for i in anos:
+        if abs(i - int(ano)) < abs(ano_escolhido - int(ano)):
+            ano_escolhido = i
+    return str(ano_escolhido)
+
+def get_year_population(ano):
+    anos = [1991, 2000, 2010, 2014, 2017]
+    ano_escolhido = anos[0]
+    for i in anos:
+        if abs(i - int(ano)) < abs(ano_escolhido - int(ano)):
+            ano_escolhido = i
+    return str(ano_escolhido)
+    
+
     
 @app.get("/")
 async def root(request: Request):
@@ -54,10 +85,18 @@ async def get_relatorio_by_id(relatorio_id: int, db: db_dependency):
 
 @app.post("/relatorios")
 async def create_relatorio(relatorio: Relatorio_model, db: db_dependency):
-    db_relatorio = models.Relatorios(titulo=relatorio.titulo, relatorio=relatorio.relatorio, autor=relatorio.autor, municipio=relatorio.municipio, ano=relatorio.ano)
-    db.add(db_relatorio)
-    db.commit()
-    db.refresh(db_relatorio)
+    for item in data:  
+        if item['Nome'].lower() == relatorio.municipio.lower():
+            populationkey = f"populacao total {get_year_population(relatorio.ano)}"
+            povertkey = f"porc de extremamente pobres {get_year_poverty(relatorio.ano)}"
+            idhmkey = f"IDHM {get_year_poverty(relatorio.ano)}"
+            db_relatorio = models.Relatorios(titulo=relatorio.titulo, relatorio=relatorio.relatorio, autor=relatorio.autor, municipio=item['Nome'], ano=relatorio.ano, populacao=item[populationkey] + " - " + get_year_population(relatorio.ano), porc_extrema_pobreza=item[povertkey] + " - " + get_year_poverty(relatorio.ano), idhm=item[idhmkey] + " - " + get_year_poverty(relatorio.ano))
+            db.add(db_relatorio)
+            db.commit()
+            db.refresh(db_relatorio)
+            return db_relatorio
+    else:
+        raise HTTPException(status_code=404, detail="Municipio not found")
 
 
 @app.put("/relatorios/{relatorio_id}")

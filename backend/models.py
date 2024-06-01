@@ -10,3 +10,6 @@ class Relatorios(base):
     autor = Column(String)
     municipio = Column(String)
     ano = Column(String)
+    populacao = Column(String)
+    porc_extrema_pobreza = Column(String)
+    idhm = Column(String)
