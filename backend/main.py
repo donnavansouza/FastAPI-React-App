@@ -1,5 +1,6 @@
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List, Annotated
 import requests
@@ -8,6 +9,7 @@ import models
 from sqlalchemy.orm import Session
 from database import sessionLocal, engine
 import requests
+from fastapi.middleware.cors import CORSMiddleware
 
 url = "http://localhost:8000/"
 
@@ -21,9 +23,21 @@ except requests.exceptions.HTTPError as err:
 except Exception as err:
     print(f"Other error occurred: {err}")
     
+app = FastAPI()  
+  
+origins = [
+    "http://localhost:3000"
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+    
 
-app = FastAPI()
 
 models.base.metadata.create_all(bind=engine)
 
@@ -59,12 +73,16 @@ def get_year_population(ano):
         if abs(i - int(ano)) < abs(ano_escolhido - int(ano)):
             ano_escolhido = i
     return str(ano_escolhido)
-    
 
-    
-@app.get("/")
-async def root(request: Request):
-    return {"message": "Hello World"}
+
+# app.mount("/static", StaticFiles(directory="static"))
+
+# templates = Jinja2Templates(directory="templates")
+
+
+# @app.get("/", response_class=HTMLResponse)
+# async def read_item(request: Request):
+#     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/relatorios")
