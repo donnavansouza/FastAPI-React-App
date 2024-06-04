@@ -28,7 +28,7 @@ function CreateArea(props) {
   }
 
   return (
-    <div>
+    <div className="createArea">
       <form>
         <input
           name="title"
@@ -41,7 +41,7 @@ function CreateArea(props) {
           onChange={handleChange}
           value={note.content}
           placeholder="Take a note..."
-          rows="3"
+          rows="7"
         />
         <input
           name="autor"

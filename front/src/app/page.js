@@ -33,7 +33,7 @@ export default function Home() {
         extreme_poverty_percentage: response.data.porc_extrema_pobreza,
         idhm: response.data.IDHM,
       });
-    }catch (error) {
+    } catch (error) {
       console.error('Error fetching municipality data:', error);
     }
   }
@@ -74,29 +74,71 @@ export default function Home() {
         extreme_poverty_percentage: response.data.porc_extrema_pobreza,
         idhm: response.data.idhm,
       });
-    }catch (error) {
+    } catch (error) {
       console.error('Error fetching municipality data:', error);
     }
   }
 
+  try {
+    useEffect(() => {
+      async function fetchData() {
+        try {
+          const response = await axios.get('http://localhost:500/relatorios');
+          console.log(response.data);
+          setNotes(response.data);
+
+        } catch (error) {
+          console.error('Error fetching notes:', error);
+        }
+      }
+      fetchData();
+    }, []);
+  } catch (error) {
+    console.error('Error fetching notes:', error);
+  }
+
   return (
-    <div>
-      <Header />
-      <CreateArea onAdd={addNote} />
-      <SearchMunYearCard function_render_mun_year={renderMunicipalityData} />
-      <Municipality_card data={Data_mun_card} />
-      {notes.map((noteItem, index) => {
-        return (
-          <Card
-            key={index}
-            id={index}
-            title={noteItem.title}
-            content={noteItem.content}
-            onDelete={deleteNote}
-          />
-        );
-      })}
-      <Footer />
+    <div className="container">
+      <div className="header">
+        <Header />
+      </div>
+      <div className="content-container">
+        <div className="create-area">
+          <CreateArea onAdd={addNote} />
+        </div>
+        <div className="right-content">
+          <div className="search-mun-year-card">
+            <SearchMunYearCard function_render_mun_year={renderMunicipalityData} />
+          </div>
+          <div className="municipality-card">
+            <Municipality_card data={Data_mun_card} />
+          </div>
+        </div>
+      </div>
+      <div className="notes">
+        {notes.map((noteItem, index) => {
+          return (
+            <div className="note-card" key={index}>
+              <Card
+                id={index}
+                autor={noteItem.autor}
+                title={noteItem.titulo}
+                relatorio={noteItem.relatorio}
+                municipio={noteItem.municipio}
+                ano={noteItem.ano}
+                populacao={noteItem.populacao}
+                porc_extrema_pobreza={noteItem.porc_extrema_pobreza}
+                idhm={noteItem.idhm}
+                onDelete={deleteNote}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="footer">
+        <Footer />
+      </div>
     </div>
   );
+
 }
