@@ -1,15 +1,16 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from database import base
 
-class Relatorios(base):
-    __tablename__ = "relatorios"
+class Reports(base):
+    __tablename__ = "reports"
     
     id = Column(Integer, primary_key=True, index=True)
-    titulo = Column(String)
-    relatorio = Column(String)
-    autor = Column(String)
-    municipio = Column(String)
-    ano = Column(String)
-    populacao = Column(String)
-    porc_extrema_pobreza = Column(String)
+    title = Column(String)
+    report = Column(String)
+    author = Column(String)
+    municipality = Column(String)
+    year = Column(String)
+    population = Column(String)
+    extreme_poverty_percentage = Column(String)
     idhm = Column(String)
+    bugdet = Column(String)

@@ -11,6 +11,11 @@ from database import sessionLocal, engine
 import requests
 from fastapi.middleware.cors import CORSMiddleware
 
+
+app = FastAPI() 
+
+
+
 url = "http://localhost:8000/"
 
 try:
@@ -23,12 +28,10 @@ except requests.exceptions.HTTPError as err:
 except Exception as err:
     print(f"Other error occurred: {err}")
     
-app = FastAPI()  
-  
+ 
 origins = [
     "http://localhost:3000"
 ]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -51,85 +54,93 @@ def get_db():
 db_dependency = Annotated[Session,Depends(get_db)]
 
 
-class Relatorio_model(BaseModel):
-    titulo: str
-    relatorio: str
-    autor: str
-    municipio: str
-    ano: str
+
+class report_model(BaseModel):
+    title: str
+    report: str
+    author: str
+    municipality: str
+    year: str
     
-def get_year_poverty(ano):
-    anos = [1991, 2000, 2010]
-    ano_escolhido = anos[0]
-    for i in anos:
-        if abs(i - int(ano)) < abs(ano_escolhido - int(ano)):
-            ano_escolhido = i
-    return str(ano_escolhido)
-
-def get_year_population(ano):
-    anos = [1991, 2000, 2010, 2014, 2017]
-    ano_escolhido = anos[0]
-    for i in anos:
-        if abs(i - int(ano)) < abs(ano_escolhido - int(ano)):
-            ano_escolhido = i
-    return str(ano_escolhido)
 
 
-# app.mount("/static", StaticFiles(directory="static"))
-
-# templates = Jinja2Templates(directory="templates")
-
-
-# @app.get("/", response_class=HTMLResponse)
-# async def read_item(request: Request):
-#     return templates.TemplateResponse("index.html", {"request": request})
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
 
 
-@app.get("/relatorios")
-async def get_relatorios(db: db_dependency):
-    result = db.query(models.Relatorios).all()
+@app.get("/reports")
+async def get_reports(db: db_dependency):
+    result = db.query(models.Reports).all()
     if not result:
-        raise HTTPException(status_code=404, detail="Relatorios not found")
+        raise HTTPException(status_code=404, detail="reports not found")
     return result
 
 
-@app.get("/relatorios/{relatorio_id}")
-async def get_relatorio_by_id(relatorio_id: int, db: db_dependency):
-    result = db.query(models.Relatorios).filter(models.Relatorios.id == relatorio_id).first()
+@app.get("/reports/{report_id}")
+async def get_report_by_id(report_id: int, db: db_dependency):
+    result = db.query(models.Reports).filter(models.Reports.id == report_id).first()
     if not result:
-        raise HTTPException(status_code=404, detail="Relatorio not found")
+        raise HTTPException(status_code=404, detail="report not found")
     return result
-    
 
-@app.post("/relatorios")
-async def create_relatorio(relatorio: Relatorio_model, db: db_dependency):
+    
+def get_year_poverty(year):
+    years = [1991, 2000, 2010]
+    chosen_year = years[0]
+    for i in years:
+        if abs(i - int(year)) < abs(chosen_year - int(year)):
+            chosen_year = i
+    return str(chosen_year)
+
+def get_year_population(year):
+    years = [1991, 2000, 2010, 2014, 2017]
+    chosen_year = years[0]
+    for i in years:
+        if abs(i - int(year)) < abs(chosen_year - int(year)):
+            chosen_year = i
+    return str(chosen_year)
+
+
+@app.post("/reports")
+async def create_report(report: report_model, db: db_dependency):
+    try:
+        response = requests.get(f"https://api-dados-abertos.tce.ce.gov.br/municipios?nome_municipio={report.municipality}")
+        response.raise_for_status()  # Check for HTTP request errors
+        municipality_code_data = response.json() # Parse the JSON response
+        response_budget_data = requests.get(f"https://api-dados-abertos.tce.ce.gov.br/dados_orcamentos?codigo_municipio={municipality_code_data['data'][0]['codigo_municipio']}&exercicio_orcamento={report.year}00")
+        budget_data = response_budget_data.json()
+        budget_key = str(budget_data['data'][0]['valor_total_fixado_orcamento'])
+        print(budget_key)
+    except requests.exceptions.HTTPError as err:
+        print(f"HTTP error occurred: {err}")
     for item in data:  
-        if item['Nome'].lower() == relatorio.municipio.lower():
-            populationkey = f"populacao total {get_year_population(relatorio.ano)}"
-            povertkey = f"porc de extremamente pobres {get_year_poverty(relatorio.ano)}"
-            idhmkey = f"IDHM {get_year_poverty(relatorio.ano)}"
-            db_relatorio = models.Relatorios(titulo=relatorio.titulo, relatorio=relatorio.relatorio, autor=relatorio.autor, municipio=item['Nome'], ano=relatorio.ano, populacao=item[populationkey] + " - " + get_year_population(relatorio.ano), porc_extrema_pobreza=item[povertkey] + " - " + get_year_poverty(relatorio.ano), idhm=item[idhmkey] + " - " + get_year_poverty(relatorio.ano))
-            db.add(db_relatorio)
+        if item["Municipality_name"].lower() == report.municipality.lower():
+            populationkey = f"Total population {get_year_population(report.year)}"
+            povertkey = f"Extreme poverty percentage {get_year_poverty(report.year)}"
+            idhmkey = f"IDHM {get_year_poverty(report.year)}"
+            db_report = models.Reports(title=report.title, report=report.report, author=report.author, municipality=item['Municipality_name'], year=report.year, population=item[populationkey] + " " + "("+get_year_population(report.year)+")", extreme_poverty_percentage=item[povertkey] + " " + "("+get_year_poverty(report.year)+")", idhm=item[idhmkey] + " " + "("+get_year_poverty(report.year)+")", bugdet=budget_key + " " + "("+ report.year + ")")
+            db.add(db_report)
             db.commit()
-            db.refresh(db_relatorio)
-            return db_relatorio
+            db.refresh(db_report)
+            return db_report
     else:
-        raise HTTPException(status_code=404, detail="Municipio not found")
+        raise HTTPException(status_code=404, detail="municipality not found")
 
 
-@app.put("/relatorios/{relatorio_id}")
-async def update_relatorio(relatorio_id: int, relatorio: Relatorio_model, db: db_dependency):
-    db.query(models.Relatorios).filter(models.Relatorios.id == relatorio_id).update(relatorio.dict())
+@app.put("/reports/{report_id}")
+async def update_report(report_id: int, report: report_model, db: db_dependency):
+    db.query(models.Reports).filter(models.Reports.id == report_id).update(report.dict())
     db.commit()
-    in_db_novo_relatorio = db.query(models.Relatorios).filter(models.Relatorios.id == relatorio_id).first()
-    return in_db_novo_relatorio
+    in_db_novo_report = db.query(models.Reports).filter(models.Reports.id == report_id).first()
+    return in_db_novo_report
     
 
-@app.delete("/relatorios/{relatorio_id}")
-async def delete_relatorio(relatorio_id: int, db: db_dependency):
-    relatorio_to_be_deleted = db.query(models.Relatorios).filter(models.Relatorios.id == relatorio_id).delete()
+@app.delete("/reports/{report_id}")
+async def delete_report(report_id: int, db: db_dependency):
+    report_to_be_deleted = db.query(models.Reports).filter(models.Reports.id == report_id).delete()
     db.commit()
-    return {"message": "Relatorio deleted successfully"}
+    return {"message": "report deleted successfully"}
     
 
 

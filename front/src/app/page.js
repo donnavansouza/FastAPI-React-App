@@ -13,24 +13,25 @@ import SearchMunYearCard from "./SearchMunYearCard";
 
 
 export default function Home() {
-  const [notes, setNotes] = useState([]);
+  const [reports, setReports] = useState([]);
 
-  async function addNote(newNote) {
+
+  async function addReport(newReport) {
     try {
-      const response = await axios.put(`http://localhost:500/relatorios/${id}`, {
-        titulo: String(newNote.title),
-        relatorio: String(newNote.content),
-        autor: String(newNote.autor),
-        municipio: Data_mun_card.municipality_name,
-        ano: Data_mun_card.year
+      const response = await axios.put(`http://localhost:500/reports/${id}`, {
+        title: String(newReport.title),
+        report: String(newReport.content),
+        author: String(newReport.author),
+        municipality: Data_mun_card.municipality_name,
+        year: Data_mun_card.year
       });
       console.log("oi)");
       console.log(response.data);
       setData_mun_card({
-        municipality_name: response.data.municipio,
-        year: response.data.ano,
-        population: response.data.populacao,
-        extreme_poverty_percentage: response.data.porc_extrema_pobreza,
+        municipality_name: response.data.municipality,
+        year: response.data.year,
+        population: response.data.population,
+        extreme_poverty_percentage: response.data.extreme_poverty_percentage,
         idhm: response.data.IDHM,
       });
     } catch (error) {
@@ -38,12 +39,9 @@ export default function Home() {
     }
   }
 
-  function deleteNote(id) {
-    setNotes(prevNotes => {
-      return prevNotes.filter((noteItem, index) => {
-        return index !== id;
-      });
-    });
+  async function deleteReport(id) {
+    const response = await axios.delete(`http://localhost:500/reports/${id}`);
+    console.log(response);
   }
 
   const [Data_mun_card, setData_mun_card] = useState({
@@ -58,20 +56,20 @@ export default function Home() {
 
   async function renderMunicipalityData(municipality_name, year) {
     try {
-      const response = await axios.post('http://localhost:500/relatorios', {
-        titulo: "Some Title",
-        relatorio: "Some Report Content",
-        autor: "Author Name",
-        municipio: municipality_name,
-        ano: String(year)
+      const response = await axios.post('http://localhost:500/reports', {
+        title: "Some Title",
+        report: "Some Report Content",
+        author: "Author Name",
+        municipality: municipality_name,
+        year: String(year)
       });
       setId(response.data.id);
       console.log(response.data);
       setData_mun_card({
-        municipality_name: response.data.municipio,
-        year: response.data.ano,
-        population: response.data.populacao,
-        extreme_poverty_percentage: response.data.porc_extrema_pobreza,
+        municipality_name: response.data.municipality,
+        year: response.data.year,
+        population: response.data.population,
+        extreme_poverty_percentage: response.data.extreme_poverty_percentage,
         idhm: response.data.idhm,
       });
     } catch (error) {
@@ -83,18 +81,18 @@ export default function Home() {
     useEffect(() => {
       async function fetchData() {
         try {
-          const response = await axios.get('http://localhost:500/relatorios');
+          const response = await axios.get('http://localhost:500/reports');
           console.log(response.data);
-          setNotes(response.data);
+          setReports(response.data);
 
         } catch (error) {
-          console.error('Error fetching notes:', error);
+          console.error('Error fetching reports:', error);
         }
       }
       fetchData();
     }, []);
   } catch (error) {
-    console.error('Error fetching notes:', error);
+    console.error('Error fetching reports:', error);
   }
 
   return (
@@ -104,7 +102,7 @@ export default function Home() {
       </div>
       <div className="content-container">
         <div className="create-area">
-          <CreateArea onAdd={addNote} />
+          <CreateArea onAdd={addReport} />
         </div>
         <div className="right-content">
           <div className="search-mun-year-card">
@@ -115,21 +113,21 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <div className="notes">
-        {notes.map((noteItem, index) => {
+      <div className="reports">
+        {reports.map((reportItem, index) => {
           return (
-            <div className="note-card" key={index}>
+            <div className="report-card" key={index}>
               <Card
-                id={index}
-                autor={noteItem.autor}
-                title={noteItem.titulo}
-                relatorio={noteItem.relatorio}
-                municipio={noteItem.municipio}
-                ano={noteItem.ano}
-                populacao={noteItem.populacao}
-                porc_extrema_pobreza={noteItem.porc_extrema_pobreza}
-                idhm={noteItem.idhm}
-                onDelete={deleteNote}
+                id={reportItem.id}
+                author={reportItem.author}
+                title={reportItem.title}
+                report={reportItem.report}
+                municipality={reportItem.municipality}
+                year={reportItem.year}
+                population={reportItem.population}
+                extreme_poverty_percentage={reportItem.extreme_poverty_percentage}
+                idhm={reportItem.idhm}
+                onDelete={deleteReport}
               />
             </div>
           );

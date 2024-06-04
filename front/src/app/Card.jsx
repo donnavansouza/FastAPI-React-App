@@ -1,4 +1,5 @@
 import React from "react";
+import DeleteIcon from '@mui/icons-material/Delete';
 
 function Card(props) {
   function handleClick() {
@@ -8,14 +9,14 @@ function Card(props) {
   return (
     <div className="card">
       <h1>Title: {props.title}</h1>
-      <p>Content: {props.relatorio}</p>
-      <p>Municipality: {props.municipio}</p>
-      <p>Year: {props.ano}</p>
-      <p>Population: {parseInt(props.populacao)}</p>
-      <p>Percentage extrem poverty: {props.porc_extrema_pobreza}</p>
+      <p>Content: {props.report}</p>
+      <p>Municipality: {props.municipality}</p>
+      <p>Year: {props.year}</p>
+      <p>Population: {parseInt(props.population)}</p>
+      <p>Percentage extrem poverty: {props.extreme_poverty_percentage}</p>
       <p>IDHM: {props.idhm}</p>
-      <p>Author: {props.autor}</p>
-      <button onClick={handleClick}>DELETE</button>
+      <p>Author: {props.author}</p>
+      <button onClick={handleClick}><DeleteIcon/></button>
     </div>
   );
 }
